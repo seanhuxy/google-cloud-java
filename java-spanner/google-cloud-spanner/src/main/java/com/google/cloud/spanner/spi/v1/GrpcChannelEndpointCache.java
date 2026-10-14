@@ -53,8 +53,34 @@ class GrpcChannelEndpointCache implements ChannelEndpointCache {
   /** Timeout for graceful channel shutdown. */
   private static final long SHUTDOWN_TIMEOUT_SECONDS = 5;
 
-  @VisibleForTesting static final Duration ROUTED_KEEPALIVE_TIME = Duration.ofSeconds(2);
-  @VisibleForTesting static final Duration ROUTED_KEEPALIVE_TIMEOUT = Duration.ofSeconds(20);
+  /**
+   * Keepalive time for location-aware routed channels.
+   *
+   * <p>grpc-java raises any client keepalive time below 10 seconds to 10 seconds, so 10 seconds is
+   * the shortest interval that is actually applied. Setting it explicitly avoids implying a shorter
+   * ping interval than the one used on the wire.
+   */
+  @VisibleForTesting static final Duration ROUTED_KEEPALIVE_TIME = Duration.ofSeconds(10);
+
+  /**
+   * Keepalive timeout for location-aware routed channels.
+   *
+   * <p>Routed channels connect directly to a single server. If that server becomes unreachable
+   * without closing the connection (for example a network partition or a dead host), requests on
+   * the channel hang until the transport is closed. The keepalive timeout bounds that wait:
+   *
+   * <ul>
+   *   <li>grpc-java closes the transport when a keepalive ping is not acknowledged within this
+   *       timeout.
+   *   <li>With the native epoll transport, grpc-java also sets {@code TCP_USER_TIMEOUT} on the
+   *       socket to this timeout, so the kernel aborts the connection once sent data has been
+   *       unacknowledged for this long.
+   * </ul>
+   *
+   * <p>10 seconds matches the Spanner leader lease, so a request blocked on an unreachable leader
+   * fails at about the time a new leader can serve it.
+   */
+  @VisibleForTesting static final Duration ROUTED_KEEPALIVE_TIMEOUT = Duration.ofSeconds(10);
 
   private final InstantiatingGrpcChannelProvider baseProvider;
   private final Map<String, GrpcChannelEndpoint> servers = new ConcurrentHashMap<>();

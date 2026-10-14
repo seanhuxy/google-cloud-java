@@ -122,6 +122,10 @@ public class GrpcChannelEndpointCacheTest {
           .isEqualTo(GrpcChannelEndpointCache.ROUTED_KEEPALIVE_TIME);
       assertThat(routedProvider.getKeepAliveTimeoutDuration())
           .isEqualTo(GrpcChannelEndpointCache.ROUTED_KEEPALIVE_TIMEOUT);
+      assertThat(GrpcChannelEndpointCache.ROUTED_KEEPALIVE_TIME)
+          .isEqualTo(java.time.Duration.ofSeconds(10));
+      assertThat(GrpcChannelEndpointCache.ROUTED_KEEPALIVE_TIMEOUT)
+          .isEqualTo(java.time.Duration.ofSeconds(10));
     } finally {
       cache.shutdown();
     }
